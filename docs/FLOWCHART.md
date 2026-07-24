@@ -205,29 +205,30 @@ backend, e.g. `GET /api/employees/5`.
 ```mermaid
 sequenceDiagram
     autonumber
+
     participant C as Client (React SPA)
     participant F as JwtAuthenticationFilter
-    participant Ctrl as Controller<br/>(EmployeeController)
-    participant Svc as Service<br/>(EmployeeService)
-    participant Repo as Repository<br/>(UserRepository / JPA)
+    participant Ctrl as EmployeeController
+    participant Svc as EmployeeService
+    participant Repo as UserRepository (JPA)
     participant DB as MySQL / H2
 
-    C->>F: HTTP GET /api/employees/5<br/>Authorization: Bearer <JWT>
-    F->>F: Validate JWT signature + expiry
-    F->>F: Load UserDetails, set SecurityContext
-    F->>Ctrl: Forward request (authenticated)
+    C->>F: HTTP GET /api/employees/5\nAuthorization: Bearer JWT
+    F->>F: Validate JWT signature & expiry
+    F->>F: Load UserDetails and set SecurityContext
+    F->>Ctrl: Forward authenticated request
     Ctrl->>Ctrl: @PreAuthorize role check (if present)
-    Ctrl->>Svc: employeeService.getById(5)
-    Svc->>Repo: userRepository.findById(5)
+    Ctrl->>Svc: getById(5)
+    Svc->>Repo: findById(5)
     Repo->>DB: SELECT * FROM users WHERE id = 5
-    DB-->>Repo: Result set (1 row)
-    Repo-->>Svc: User entity (or empty Optional)
+    DB-->>Repo: User record
+    Repo-->>Svc: User entity
     Svc->>Svc: EntityMapper.toUserResponse(user)
     Svc-->>Ctrl: UserResponse
-    Ctrl-->>F: ResponseEntity 200 OK + ApiResponse&lt;UserResponse&gt;
-    F-->>C: HTTP 200 OK (application/json)
+    Ctrl-->>F: ResponseEntity<ApiResponse<UserResponse>>
+    F-->>C: HTTP 200 OK (JSON)
 
-    Note over Ctrl,Svc: On error (not found, validation, duplicate email, etc.)<br/>GlobalExceptionHandler maps exceptions to a standardized<br/>ApiResponse.error(...) body (400/401/403/404/500).
+    Note over Ctrl,Svc: Errors such as validation failures,\nresource not found, duplicate email,\nor access denied are handled by\nGlobalExceptionHandler and returned\nas standardized ApiResponse objects.
 ```
 
 ---
