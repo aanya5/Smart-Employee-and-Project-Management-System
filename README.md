@@ -205,8 +205,7 @@ The project includes automated unit and integration tests covering the authentic
 - [`docs/FLOWCHART.md`](docs/FLOWCHART.md) — Mermaid diagrams for the
   authentication, employee, project, and task flows, the layered API
   request flow, and the database ER diagram.
-- [`docs/SCREENSHOTS.md`](docs/SCREENSHOTS.md) — where to save screenshots
-  and the recommended list of screens to capture for the submission.
+  
 
 ## Submission Checklist
 
