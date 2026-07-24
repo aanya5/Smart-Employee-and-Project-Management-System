@@ -2,6 +2,10 @@
 
 Full-stack web application for employee, project, and task management with secure JWT authentication, role-based dashboards (Admin & Employee), advanced search & filtering, profile management, audit logging, and exportable PDF/Excel reports.
 
+## 🎥 Demo
+
+Watch the demo: https://youtu.be/rfFKKjNbAK8
+
 ## Tech Stack
 
 | Layer | Technologies |
