@@ -1,0 +1,671 @@
+{
+  "info": {
+    "_postman_id": "f76d3c9e-fd1f-45d3-b65a-f5e2681acc9a",
+    "name": "Smart Employee & Project Management System",
+    "description": "Postman collection for the Smart Employee & Project Management System REST API (Spring Boot backend). Endpoints, request bodies, and enum values here are taken directly from the @RestController classes under backend/src/main/java/com/smartemp/controller/ (AuthController, EmployeeController, ProjectController, TaskController, DashboardController, ReportController) and their DTOs (com.smartemp.dto.request/response, com.smartemp.model.enums). Import this collection, run Login first (it stores the JWT in the `token` collection variable), then exercise the other folders.\n\nNOTE: the backend currently has an unresolved inconsistency between these controllers and some of their services (TaskService/DashboardService/ReportService reference a different, newer entity model) - see the \"Known Backend Inconsistencies\" section in the root README. This collection documents the controller-defined contract as-is; a couple of endpoints (e.g. GET /api/auth/me) are included because they were requested for this submission but are not yet implemented in AuthController.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "employeeId", "value": "1", "type": "string" },
+    { "key": "projectId", "value": "1", "type": "string" },
+    { "key": "taskId", "value": "1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "id": "c8bfe953-cb8b-4719-b165-6d78844f30d1",
+      "item": [
+        {
+          "name": "Register",
+          "id": "e487d2e6-8136-4c16-8a38-e80c4053ab66",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.employee@company.com\",\n  \"password\": \"Emp@123\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Employee\",\n  \"role\": \"EMPLOYEE\",\n  \"department\": \"Engineering\",\n  \"designation\": \"Software Engineer\",\n  \"phone\": \"9000000099\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "POST /api/auth/register (AuthController#register -> RegisterRequest). `role` defaults to EMPLOYEE if omitted. Response is wrapped in the standard ApiResponse envelope: `{ success, message, data: { token, type, user }, errors, timestamp }`."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "id": "d5b23a31-8e88-4a82-a2f9-74927d5afe24",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// AuthController wraps the AuthResponse in ApiResponse<T>, so the",
+                  "// token is at response.data.token, not the top level.",
+                  "let jsonData;",
+                  "try {",
+                  "    jsonData = pm.response.json();",
+                  "} catch (e) {",
+                  "    jsonData = {};",
+                  "}",
+                  "",
+                  "pm.test('Login succeeded (status 200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const token = jsonData.data && jsonData.data.token;",
+                  "if (token) {",
+                  "    pm.collectionVariables.set('token', token);",
+                  "    console.log('Saved token to collection variable `token`.');",
+                  "} else {",
+                  "    console.warn('No data.token field found in login response body.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@company.com\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "POST /api/auth/login (AuthController#login -> LoginRequest). Login with admin@company.com / Admin@123 (or john.doe@company.com / Emp@123). The JWT at `data.token` is auto-saved to the `token` collection variable by the test script."
+          },
+          "response": []
+        },
+        {
+          "name": "Me (not yet implemented)",
+          "id": "95a1cf92-2421-48ac-83d6-c698e4292d38",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Requested for this submission, but AuthController currently only exposes /register and /login - there is no /me endpoint yet. Add:\n\n@GetMapping(\"/me\")\npublic ResponseEntity<ApiResponse<UserResponse>> me(Authentication authentication) { ... }\n\nto AuthController (resolving the user via authentication.getName()) to make this request work."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "id": "4efce7ce-242d-4d99-8ddd-04f85bfd24cb",
+      "item": [
+        {
+          "name": "List Employees",
+          "id": "8cd333e4-86b7-4830-9d34-d00de901cbcc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees?search=&department=&role=EMPLOYEE&page=0&size=10&sortBy=id&sortDir=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"],
+              "query": [
+                { "key": "search", "value": "", "description": "Matches firstName/lastName/email" },
+                { "key": "department", "value": "", "description": "Exact department match, e.g. Engineering" },
+                { "key": "role", "value": "EMPLOYEE", "description": "ADMIN | EMPLOYEE" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sortBy", "value": "id" },
+                { "key": "sortDir", "value": "asc" }
+              ]
+            },
+            "description": "GET /api/employees (EmployeeController#search). Employees ARE users (there is no separate employees table wired to this controller) - this lists `users`, typically filtered to role=EMPLOYEE. Returns ApiResponse<Page<UserResponse>>."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee By Id",
+          "id": "c9932282-fcfe-4baf-aea0-b521442cbefa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeId}}"]
+            },
+            "description": "GET /api/employees/{id} -> ApiResponse<UserResponse>. Note: {{employeeId}} here is a `users.id`, not a separate employee id."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Employee",
+          "id": "9a162cf5-bda4-4ae0-b1d2-b01546597ff5",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.employee@company.com\",\n  \"password\": \"Emp@123\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Employee\",\n  \"role\": \"EMPLOYEE\",\n  \"department\": \"Engineering\",\n  \"designation\": \"Software Engineer\",\n  \"phone\": \"9000000099\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees"]
+            },
+            "description": "POST /api/employees (ADMIN only, @PreAuthorize hasRole('ADMIN')). Creates a `users` row directly (EmployeeRequest)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Employee",
+          "id": "fc46c2e1-bf04-4e06-a0c1-2351e9716b76",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@company.com\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"role\": \"EMPLOYEE\",\n  \"department\": \"Engineering\",\n  \"designation\": \"Lead Software Engineer\",\n  \"phone\": \"9876543210\",\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeId}}"]
+            },
+            "description": "PUT /api/employees/{id} (ADMIN only). Leave `password` out/blank to keep the existing password."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Employee",
+          "id": "70a9fc45-5701-40ac-8c4f-d7038ab696aa",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "employees", "{{employeeId}}"]
+            },
+            "description": "DELETE /api/employees/{id} (ADMIN only)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "id": "63223c88-3114-45b4-b562-a131fcbffc25",
+      "item": [
+        {
+          "name": "List Projects",
+          "id": "04090f30-a31f-4e37-ab45-38cf2bcddad7",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects?search=&status=&priority=&page=0&size=10&sortBy=id&sortDir=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "status", "value": "", "description": "PLANNING | IN_PROGRESS | ON_HOLD | COMPLETED | CANCELLED" },
+                { "key": "priority", "value": "", "description": "LOW | MEDIUM | HIGH | CRITICAL" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sortBy", "value": "id" },
+                { "key": "sortDir", "value": "asc" }
+              ]
+            },
+            "description": "GET /api/projects (ProjectController#search) -> ApiResponse<Page<ProjectResponse>>."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Project By Id",
+          "id": "2a5ea78e-58e9-477c-82eb-e2a857a7a8ce",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Projects By Employee",
+          "id": "72b34f74-7edb-497b-891b-5b4ee97be4ee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/employee/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "employee", "{{employeeId}}"]
+            },
+            "description": "GET /api/projects/employee/{employeeId} -> ApiResponse<List<ProjectResponse>>. Lists projects the given user is staffed on."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Project",
+          "id": "b1eb161d-72bf-43b7-a18e-c372b5425e45",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Project\",\n  \"description\": \"Project description goes here.\",\n  \"status\": \"PLANNING\",\n  \"priority\": \"MEDIUM\",\n  \"startDate\": \"2026-08-01\",\n  \"deadline\": \"2026-12-31\",\n  \"managerId\": 1,\n  \"employeeIds\": [1, 2]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects"]
+            },
+            "description": "POST /api/projects (ADMIN only). `managerId`/`employeeIds` reference `users.id` values."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Project",
+          "id": "93bf5189-834c-47d1-979b-d71df651d6d8",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Project\",\n  \"description\": \"Updated description.\",\n  \"status\": \"IN_PROGRESS\",\n  \"priority\": \"HIGH\",\n  \"startDate\": \"2026-08-01\",\n  \"deadline\": \"2027-01-31\",\n  \"managerId\": 1,\n  \"employeeIds\": [1, 2]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Employees To Project",
+          "id": "b871c141-bb7d-4086-87c7-66ce1f729f0a",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[1, 2, 3]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}", "assign"]
+            },
+            "description": "PUT /api/projects/{id}/assign (ADMIN only). Body is a raw JSON array of user ids (Set<Long>). IMPORTANT: this REPLACES the entire assigned-employee list for the project, it is not additive - include every employee that should remain assigned."
+          },
+          "response": []
+        },
+        {
+          "name": "Unassign Employee From Project",
+          "id": "edc183ea-2143-4bfb-8200-93a18db32186",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[1, 2]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}", "assign"]
+            },
+            "description": "There is no dedicated \"unassign\" endpoint. To unassign an employee, call the same PUT /api/projects/{id}/assign endpoint with the full desired employee id list, simply omitting the employee(s) you want removed (compare this body to \"Assign Employees To Project\" - id 3 has been dropped)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Project",
+          "id": "e1d9ea16-dcba-4396-a03a-5c3d781bb233",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "{{projectId}}"]
+            },
+            "description": "DELETE /api/projects/{id} (ADMIN only). Cascades to the project's tasks."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "id": "3e9944b5-1a5a-47f5-a9d8-c72e5bed091e",
+      "item": [
+        {
+          "name": "List Tasks",
+          "id": "1e605cfb-0a74-4656-a606-a73d25343cf9",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?search=&status=&priority=&projectId=&assigneeId=&dueBefore=&dueAfter=&page=0&size=10&sortBy=id&sortDir=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"],
+              "query": [
+                { "key": "search", "value": "" },
+                { "key": "status", "value": "", "description": "TODO | IN_PROGRESS | IN_REVIEW | COMPLETED | BLOCKED" },
+                { "key": "priority", "value": "", "description": "LOW | MEDIUM | HIGH | CRITICAL" },
+                { "key": "projectId", "value": "" },
+                { "key": "assigneeId", "value": "" },
+                { "key": "dueBefore", "value": "", "description": "ISO date, e.g. 2026-12-31" },
+                { "key": "dueAfter", "value": "", "description": "ISO date, e.g. 2026-01-01" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sortBy", "value": "id" },
+                { "key": "sortDir", "value": "asc" }
+              ]
+            },
+            "description": "GET /api/tasks (TaskController#search) -> ApiResponse<Page<TaskResponse>>."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Task By Id",
+          "id": "2665d6dc-021a-4d2d-bb56-c9e64cddbd9f",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks By Assignee",
+          "id": "7cec4777-86a6-415e-b23a-1bdfdcc7467e",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/assignee/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "assignee", "{{employeeId}}"]
+            },
+            "description": "GET /api/tasks/assignee/{assigneeId} -> ApiResponse<List<TaskResponse>>."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks By Project",
+          "id": "d65fe715-4ee1-4d29-9a11-03d04aa047e3",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/project/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "project", "{{projectId}}"]
+            },
+            "description": "GET /api/tasks/project/{projectId} -> ApiResponse<List<TaskResponse>>."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task",
+          "id": "0317b804-bc7b-4180-b129-37e3fe24b825",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Task\",\n  \"description\": \"Task description goes here.\",\n  \"status\": \"TODO\",\n  \"priority\": \"MEDIUM\",\n  \"progress\": 0,\n  \"dueDate\": \"2026-12-31\",\n  \"projectId\": {{projectId}},\n  \"assigneeId\": {{employeeId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks"]
+            },
+            "description": "POST /api/tasks (ADMIN only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Task",
+          "id": "b6abe778-7458-4029-af3d-940ade003af6",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Task\",\n  \"description\": \"Updated task description.\",\n  \"status\": \"IN_PROGRESS\",\n  \"priority\": \"HIGH\",\n  \"progress\": 25,\n  \"dueDate\": \"2027-01-15\",\n  \"projectId\": {{projectId}},\n  \"assigneeId\": {{employeeId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            },
+            "description": "PUT /api/tasks/{id} (ADMIN only) - full replace, same shape as Create Task."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Task Status",
+          "id": "4df61664-401b-42cb-92a5-a71d433f1220",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}", "progress"]
+            },
+            "description": "PATCH /api/tasks/{id}/progress (TaskController#updateProgress -> TaskUpdateRequest{status, progress, remarks}). All 3 fields are optional/independent - send just `status` for a status-only update. There is no separate PATCH /status endpoint; both status and progress updates go through this one route."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Task Progress",
+          "id": "bdac3050-5e85-4f11-a08a-69216ff2b81e",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"progress\": 75,\n  \"remarks\": \"On track for the due date.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}", "progress"]
+            },
+            "description": "Same PATCH /api/tasks/{id}/progress endpoint as \"Update Task Status\", shown here updating progress + remarks instead."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Task",
+          "id": "905b9586-772e-4035-9f0d-0b9be80b861f",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "{{taskId}}"]
+            },
+            "description": "DELETE /api/tasks/{id} (ADMIN only)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "id": "a7e465ff-7b3c-461b-b312-e7482964ea06",
+      "item": [
+        {
+          "name": "Admin Dashboard",
+          "id": "57bc4333-3be1-4e12-a4eb-af40ac909af4",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "admin"]
+            },
+            "description": "GET /api/dashboard/admin (ADMIN only) -> ApiResponse<DashboardResponse> with employee/project/task totals, breakdowns by status, and recent/upcoming lists."
+          },
+          "response": []
+        },
+        {
+          "name": "Employee Dashboard",
+          "id": "3b2ecaf1-748e-48fa-97d7-53bde19a252e",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/employee",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "employee"]
+            },
+            "description": "GET /api/dashboard/employee - resolves the current user from the JWT (Authentication#getName()) and returns their own task/project summary."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "id": "db636e57-841b-4737-ae87-976f393028f2",
+      "item": [
+        {
+          "name": "Employee Task Report",
+          "id": "6cf2b1ee-5680-44f2-bc42-c9f8a2dcea76",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/employee/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "employee", "{{employeeId}}"]
+            },
+            "description": "GET /api/reports/employee/{employeeId} (ADMIN only) -> ApiResponse<Map<String,Object>>. Task breakdown for a single employee."
+          },
+          "response": []
+        },
+        {
+          "name": "Project Progress Report",
+          "id": "e7d752b6-d947-4f8e-a524-91c814956cfc",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/project/{{projectId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "project", "{{projectId}}"]
+            },
+            "description": "GET /api/reports/project/{projectId} -> ApiResponse<Map<String,Object>>. Completion percentage/status for a single project."
+          },
+          "response": []
+        },
+        {
+          "name": "Pending Tasks Report",
+          "id": "1dc25d87-ed6c-4d7e-8e3e-c774f27cf112",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "pending"]
+            },
+            "description": "GET /api/reports/pending (ADMIN only) -> ApiResponse<Map<String,Object>>. All tasks not yet completed, across every employee/project."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Report (Excel)",
+          "id": "f938b0b9-190d-4c85-9e80-79bc34a25575",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/export/excel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "export", "excel"]
+            },
+            "description": "GET /api/reports/export/excel (ADMIN only). Downloads pending-tasks.xlsx."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Report (PDF)",
+          "id": "35bc9d33-ce91-4bde-86d1-f3b1ec3cf52e",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/export/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "export", "pdf"]
+            },
+            "description": "GET /api/reports/export/pdf (ADMIN only). Downloads pending-tasks.pdf."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
