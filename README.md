@@ -32,26 +32,25 @@ Full-stack web application for employee, project, and task management with secur
 smart-employee-management/
 ├── backend/                         # Spring Boot Backend (JWT, JPA, REST APIs)
 │   ├── src/
-│   ├── uploads/
-│   │   └── profile-images/          # Uploaded employee profile pictures
 │   ├── pom.xml
 │   └── Dockerfile
 ├── frontend/                        # React Application (React Router, Axios, Material UI)
 │   ├── public/
 │   ├── src/
 │   ├── package.json
+│   ├── package-lock.json
 │   ├── Dockerfile
 │   └── nginx.conf
 ├── database/
 │   └── schema.sql                   # MySQL schema and sample data
 ├── docs/
 │   ├── FLOWCHART.md                 # System flow diagrams
-│   └── SCREENSHOTS.md               # Application screenshots guide
+│   ├── SCREENSHOTS1/                # Application screenshots (Part 1)
+│   ├── SCREENSHOTS2/                # Application screenshots (Part 2)
+│   └── SCREENSHOTS3/                # Application screenshots (Part 3)
 ├── postman/
 │   └── Smart_Employee_Management.postman_collection.json
 ├── docker-compose.yml               # Multi-container Docker configuration
-├── start-backend.bat                # Backend startup script
-├── start-frontend.bat               # Frontend startup script
 ├── .gitignore
 └── README.md
 ```
